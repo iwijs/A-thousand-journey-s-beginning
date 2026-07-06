@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# 数据集与模型权重（体积大，不进仓库）
+data/
+datasets/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+
+# 日志与输出
+runs/
+wandb/
+output/
+*.log
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
