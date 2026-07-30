@@ -99,6 +99,16 @@ class Value:
         out._backward = _backward
         return out
 
+    def sigmoid(self) -> "Value":
+        value = 1.0 / (1.0 + math.exp(-self.data))
+        out = Value(value, (self,), "sigmoid")
+
+        def _backward() -> None:
+            self.grad += value * (1.0 - value) * out.grad
+
+        out._backward = _backward
+        return out
+
     def relu(self) -> "Value":
         value = max(0.0, self.data)
         out = Value(value, (self,), "ReLU")
