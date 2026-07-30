@@ -1,11 +1,27 @@
 """Train a tiny scalar MLP on four two-dimensional samples."""
 
+import argparse
 import random
 
 from minigrad import MLP, Value
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--learning-rate",
+        type=float,
+        default=None,
+        help=(
+            "use a constant learning rate; when omitted, use the default "
+            "0.08-to-0.04 decay schedule"
+        ),
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
+    args = parse_args()
     random.seed(42)
     features = [
         [2.0, 3.0],
@@ -27,7 +43,11 @@ def main() -> None:
         model.zero_grad()
         loss.backward()
 
-        learning_rate = 0.08 * (1.0 - 0.5 * step / 200)
+        learning_rate = (
+            args.learning_rate
+            if args.learning_rate is not None
+            else 0.08 * (1.0 - 0.5 * step / 200)
+        )
         for parameter in model.parameters():
             parameter.data -= learning_rate * parameter.grad
 
