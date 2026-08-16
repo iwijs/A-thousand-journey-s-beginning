@@ -11,7 +11,16 @@
 - W1 Day3–Day6 练习脚本已完成并验证，自动判分依次为 8/8、6/6、7/7、6/6。
 - `project0_micrograd` 已完成学习实操与扩展：5 项测试通过，完成 `sigmoid`、有限差分检查
   和三组学习率对比。
-- `project1_mnist` 已通过 synthetic 离线端到端验证；正式 MNIST 训练结果待本人运行和记录。
+- `project1_mnist` 已完成正式 MNIST 训练、独立 checkpoint 评估、曲线与单变量对照实验。
+- `project2_cifar10` 已完成三档增强、CPU/GPU 统一训练、CSV、完整断点恢复和 6 项测试；
+  30 轮真实 CIFAR-10 baseline 的 best validation 为 88.42%，独立 test 为 87.04%。
+- `project3_resnet` 已手写 CIFAR ResNet-18/plain18/BN 消融并通过 4 项测试；100 轮 ResNet-18
+  / Plain-18 的独立 test 为 94.64% / 94.19%。
+- `project4_nanogpt` 已实现字符 tokenizer、causal multi-head attention、GPT 训练/恢复/生成
+  并通过 4 项测试；818,048 参数模型训练 5000 steps，最佳 validation loss 1.5749。
+- `project5_lora` 已实现低秩注入、冻结、merge、adapter checkpoint 与领域语料抽取并通过
+  5 项测试；rank 2/8 最佳 domain validation loss 为 1.4294 / 1.4299。
+- `notes/` 已加入 ResNet、Attention、LoRA 三篇“原论文主张 ↔ 当前实现 ↔ 证据边界”对照笔记。
 
 参考实现和自动测试只是学习起点，不把它们写成已经独立完成的个人成果。
 
@@ -28,18 +37,21 @@ A-thousand-journey-s-beginning/
 ├── project0_micrograd/      # 标量自动求导 + 小型 MLP
 ├── project1_mnist/          # 项目① MNIST（MLP + CNN）
 ├── project2_cifar10/        # 项目② CIFAR-10 训练工程
-├── project3_resnet/         # 项目③ ResNet 复现
-├── project4_nanogpt/        # 项目④ 字符级 GPT
-├── project5_frontier/       # 项目⑤ 前沿方向小实验
+├── project3_resnet/         # 项目③ 手写 ResNet-CIFAR 与消融
+├── project4_nanogpt/        # 项目④ 从零字符级 GPT
+├── project5_lora/           # 项目⑤ LoRA 前沿小实验
+├── docs/tutorials/          # W3–W6 理论结合工程逐行教程
 └── notes/                   # 学习笔记 / 论文精读
 ```
 
-规划中的目录会在进入相应周次时创建；当前不要把尚未创建的 W3–W6 项目视为已完成。
+项目目录和 smoke tests 已建立，但正式实验只以各项目 README 中记录的真实日志为准；不要把
+“代码存在”或 synthetic 通过写成正式数据集成果。
 
 ## 环境与运行方式
 
 本机当前系统默认 `python` 指向 `C:\Python314\python.exe`，其中没有安装 NumPy/PyTorch。
-已验证的学习环境是 `ai-learn`（Python 3.11、NumPy 2.4.4、PyTorch 2.11.0+cpu）。
+已验证的学习环境是 `ai-learn`（Python 3.11.15、NumPy 2.4.4、PyTorch 2.11.0+cu130，
+本机 NVIDIA GeForce RTX 5060 Laptop GPU）。
 为避免误用系统 Python，也避免 Conda 捕获中文输出时的编码错误，推荐从仓库根目录直接运行：
 
 ```powershell
@@ -58,6 +70,10 @@ W2 工程线的完整操作讲义位于工作区：
 - `1_每日任务指南/W2_工程实践01_micrograd完整教程.md`
 - `1_每日任务指南/W2_工程实践02_MNIST完整教程.md`
 
+W3–W6 的可发布逐行工程讲义位于 [`docs/tutorials`](docs/tutorials/README.md)；本地完整理论
+索引仍是 `1_每日任务指南/W2-W6_理论讲义索引.md`。每个正式实验的真实结果、曲线、配置和
+证据边界已回填到对应项目 README。
+
 ## 进度日志
 
 - 2026-07-06：W1 Day1，环境搭建完成，跑通 `day1_env_check.py`。
@@ -66,6 +82,16 @@ W2 工程线的完整操作讲义位于工作区：
 - 2026-07-28：完成 W1 Day3–Day6 练习；在 `ai-learn` 环境逐个自动判分，结果为 8/8、6/6、7/7、6/6。
 - 2026-07-30：完成 W2 micrograd 学习实操；实现 `sigmoid`，加入有限差分检查，5 项测试
   通过，并记录 `0.01`、`0.08`、`0.1` 三组学习率实验。
+- 2026-08-10：搭建 W3 CIFAR-10 基础 CNN 训练工程；实现 train/validation 固定划分、
+  validation-only best checkpoint、last checkpoint、训练增强、CSV、曲线和离线端到端测试。
+- 2026-08-16：完成 W3 三档增强与断点恢复；RTX 5060 Laptop GPU 上完成 30 轮真实 baseline，
+  best validation 88.42%，一次独立官方 test 87.04%。
+- 2026-08-16：完成 W4 ResNet-18 / Plain-18 两组 100 轮对照，official test 分别为
+  94.64% / 94.19%；差距很小，但 Plain 高学习率阶段波动更大。
+- 2026-08-16：完成 W5 Tiny Shakespeare 字符 GPT 5000-step baseline，validation loss
+  4.1783 → 1.5749，并保存固定生成样例。
+- 2026-08-16：完成 W6 attention LoRA rank 2/8 对照；修复正式 CUDA 首跑发现的 adapter
+  device/dtype bug，扩展为 5 项测试，并如实记录“r8 train 更低但 validation 无收益”。
 
 ## 关于我
 人工智能专业本科生（浙江大学）。正在系统学习深度学习，寻找感兴趣的研究方向。
