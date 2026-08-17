@@ -13,7 +13,9 @@
   和三组学习率对比。
 - `project1_mnist` 已完成正式 MNIST 训练、独立 checkpoint 评估、曲线与单变量对照实验。
 - `project2_cifar10` 已完成三档增强、CPU/GPU 统一训练、CSV、完整断点恢复和 6 项测试；
-  30 轮真实 CIFAR-10 baseline 的 best validation 为 88.42%，独立 test 为 87.04%。
+  30 轮真实 CIFAR-10 baseline 可确定性复现，best validation / 独立 test 为
+  88.42% / 87.04%。只关闭数据增强的一变量对照为 85.92% / 84.36%，并呈现明显更大的
+  train-validation gap；test 仅在 validation 完成选模后做最终评估。
 - `project3_resnet` 已手写 CIFAR ResNet-18/plain18/BN 消融并通过 4 项测试；100 轮 ResNet-18
   / Plain-18 的独立 test 为 94.64% / 94.19%。
 - `project4_nanogpt` 已实现字符 tokenizer、causal multi-head attention、GPT 训练/恢复/生成
@@ -86,6 +88,11 @@ W3–W6 的可发布逐行工程讲义位于 [`docs/tutorials`](docs/tutorials/R
   validation-only best checkpoint、last checkpoint、训练增强、CSV、曲线和离线端到端测试。
 - 2026-08-16：完成 W3 三档增强与断点恢复；RTX 5060 Laptop GPU 上完成 30 轮真实 baseline，
   best validation 88.42%，一次独立官方 test 87.04%。
+- 2026-08-17：校验 CIFAR-10 官方归档 MD5 并绕开旧解压目录 ACL 异常，在新数据根目录
+  精确复现 baseline；随后仅把 `augmentation` 从 `basic` 改为 `none` 跑满同样 30 轮。
+  无增强对照 best validation / final test 为 85.92% / 84.36%，分别低 2.50 / 2.68 pp，
+  同时选中轮 train-validation gap 从 2.53 pp 扩大到 13.76 pp。完整命令、配置、曲线和
+  输出位于 `project2_cifar10/README.md` 与 `assets/`。
 - 2026-08-16：完成 W4 ResNet-18 / Plain-18 两组 100 轮对照，official test 分别为
   94.64% / 94.19%；差距很小，但 Plain 高学习率阶段波动更大。
 - 2026-08-16：完成 W5 Tiny Shakespeare 字符 GPT 5000-step baseline，validation loss

@@ -1,0 +1,33 @@
+device=cuda model=cnn dataset=cifar10 selection_metric=validation_accuracy
+split_sizes: train=45000 validation=5000; test=not_loaded
+epoch=01 train_loss=1.3966 train_acc=49.26% val_loss=1.3325 val_acc=53.74% lr=0.001 time=13.0s
+epoch=02 train_loss=1.0098 train_acc=64.15% val_loss=1.0023 val_acc=65.36% lr=0.000997261 time=12.2s
+epoch=03 train_loss=0.8461 train_acc=70.36% val_loss=0.9765 val_acc=67.12% lr=0.000989074 time=12.0s
+epoch=04 train_loss=0.7475 train_acc=74.04% val_loss=0.9032 val_acc=70.30% lr=0.000975528 time=11.9s
+epoch=05 train_loss=0.6812 train_acc=76.50% val_loss=0.8379 val_acc=72.62% lr=0.000956773 time=12.1s
+epoch=06 train_loss=0.6253 train_acc=78.67% val_loss=0.6727 val_acc=77.08% lr=0.000933013 time=13.1s
+epoch=07 train_loss=0.5884 train_acc=79.73% val_loss=0.5696 val_acc=80.58% lr=0.000904508 time=15.7s
+epoch=08 train_loss=0.5562 train_acc=80.95% val_loss=0.5801 val_acc=80.90% lr=0.000871572 time=15.6s
+epoch=09 train_loss=0.5256 train_acc=81.71% val_loss=0.6065 val_acc=80.12% lr=0.000834565 time=15.8s
+epoch=10 train_loss=0.5012 train_acc=82.79% val_loss=0.5343 val_acc=81.92% lr=0.000793893 time=17.0s
+epoch=11 train_loss=0.4782 train_acc=83.58% val_loss=0.5351 val_acc=82.04% lr=0.00075 time=15.5s
+epoch=12 train_loss=0.4560 train_acc=84.35% val_loss=0.4934 val_acc=83.06% lr=0.000703368 time=17.2s
+epoch=13 train_loss=0.4366 train_acc=84.91% val_loss=0.4863 val_acc=83.84% lr=0.000654508 time=16.4s
+epoch=14 train_loss=0.4131 train_acc=85.81% val_loss=0.4999 val_acc=83.22% lr=0.000603956 time=18.2s
+epoch=15 train_loss=0.4049 train_acc=86.08% val_loss=0.4611 val_acc=85.24% lr=0.000552264 time=15.3s
+epoch=16 train_loss=0.3861 train_acc=86.66% val_loss=0.4393 val_acc=85.36% lr=0.0005 time=14.5s
+epoch=17 train_loss=0.3675 train_acc=87.40% val_loss=0.4446 val_acc=85.70% lr=0.000447736 time=18.6s
+epoch=18 train_loss=0.3586 train_acc=87.67% val_loss=0.4090 val_acc=86.32% lr=0.000396044 time=18.4s
+epoch=19 train_loss=0.3414 train_acc=88.27% val_loss=0.4025 val_acc=86.78% lr=0.000345492 time=18.0s
+epoch=20 train_loss=0.3296 train_acc=88.65% val_loss=0.3908 val_acc=87.26% lr=0.000296632 time=20.4s
+epoch=21 train_loss=0.3178 train_acc=89.00% val_loss=0.3902 val_acc=87.50% lr=0.00025 time=16.6s
+epoch=22 train_loss=0.3069 train_acc=89.34% val_loss=0.3845 val_acc=87.42% lr=0.000206107 time=16.6s
+epoch=23 train_loss=0.2996 train_acc=89.73% val_loss=0.3760 val_acc=87.60% lr=0.000165435 time=15.6s
+epoch=24 train_loss=0.2917 train_acc=90.01% val_loss=0.3854 val_acc=87.76% lr=0.000128428 time=16.2s
+epoch=25 train_loss=0.2845 train_acc=90.38% val_loss=0.3748 val_acc=88.00% lr=9.54915e-05 time=17.1s
+epoch=26 train_loss=0.2793 train_acc=90.37% val_loss=0.3663 val_acc=88.00% lr=6.69873e-05 time=15.4s
+epoch=27 train_loss=0.2730 train_acc=90.72% val_loss=0.3607 val_acc=88.06% lr=4.32273e-05 time=17.0s
+epoch=28 train_loss=0.2665 train_acc=90.88% val_loss=0.3611 val_acc=88.22% lr=2.44717e-05 time=16.3s
+epoch=29 train_loss=0.2654 train_acc=90.95% val_loss=0.3610 val_acc=88.42% lr=1.09262e-05 time=13.2s
+epoch=30 train_loss=0.2641 train_acc=90.91% val_loss=0.3605 val_acc=88.20% lr=2.73905e-06 time=15.1s
+done: best_val_accuracy=88.42%, parameters=288,746, artifacts=runs\cifar10_baseline_seed42_20260817\cnn, curves=runs\cifar10_baseline_seed42_20260817\cnn\curves.png

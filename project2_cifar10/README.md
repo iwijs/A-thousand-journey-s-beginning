@@ -1,7 +1,8 @@
 # Project 2：CIFAR-10 基础 CNN 训练工程
 
-> 当前状态（2026-08-16）：工程、断点恢复测试和 30 轮真实 CIFAR-10 GPU baseline
-> 均已完成。validation 选出的第 29 轮 checkpoint 在官方 test 上达到 **87.04%**。
+> 当前状态（2026-08-17）：工程、断点恢复测试、30 轮真实 CIFAR-10 GPU baseline
+> 复现实验和只关闭数据增强的一变量对照均已完成。baseline 由 validation 选出的
+> 第 29 轮 checkpoint 在官方 test 上达到 **87.04%**；无增强对照为 **84.36%**。
 
 这个项目把 `project1_mnist` 的 `data / models / engine / train / utils / tests`
 模块风格延续到 CIFAR-10，并修正了 MNIST 入门工程用 test 集选 checkpoint 的实验协议：
@@ -194,40 +195,168 @@ runs/cifar10/cnn/
 accuracy、配置、全局 RNG 和 DataLoader generator 状态。`selection_metric=validation_accuracy` 同时写入配置和 checkpoint；
 独立评估入口会检查这个字段。若 validation accuracy 持平，保留最早达到该值的 best。
 
-## 7. 2026-08-16 实际验证结果
+## 7. 2026-08-17 真实 baseline 与一变量对照
+
+### 7.1 环境、数据下载处理与协议验证
 
 验证环境：Windows、Python 3.11.15、PyTorch 2.11.0+cu130、torchvision
-0.26.0+cu130、NumPy 2.4.4、Matplotlib 3.10.8。机器可用 RTX 5060 Laptop GPU，
-离线测试明确使用 CPU，正式 baseline 使用 RTX 5060 Laptop GPU。
+0.26.0+cu130、NumPy 2.4.4、Matplotlib 3.10.8，GPU 为 RTX 5060 Laptop。
 
-- `compileall`：通过；
-- 离线单元/集成测试：**6/6 passed**；
-- 仓库级 smoke train：成功完成 2 epochs，train 128 / validation 64，且输出明确显示
-  `test=not_loaded`；
-- 产物：`config.json`、`history.csv`、`curves.png`、`best.pt`、`last.pt` 全部生成；
-- checkpoint：`best.pt` 与 `last.pt` 均可读取，并包含恢复所需状态；
-- 断点恢复：离线训练先完成 2 轮，再从 `last.pt` 恢复到第 3 轮，CSV epoch 为
-  `[1, 2, 3]`，无重复或缺口；
-- 独立 synthetic test：成功加载 epoch 2 的 best，输出
-  `selected_by=validation_accuracy`，64 个样本流程完整结束；
-- 手动重绘：`curves_manual.png` 成功生成。
-- 正式 baseline：官方 45,000 train / 5,000 validation，30 epochs，`basic` 增强，
-  AdamW，cosine scheduler，seed 42，deterministic 模式；
-- 最佳 validation：**88.42%（epoch 29）**；epoch 30 validation 为 88.20%；
-- 独立官方 test：只评估 validation 选出的 epoch 29 `best.pt`，
-  **test loss 0.3982，test accuracy 87.04%（10,000 样本）**；
-- 模型参数量：288,746；完整 CSV、曲线、best/last checkpoint 与配置位于
-  `runs/cifar10_baseline_seed42/cnn/`。
+已有 `data/cifar-10-python.tar.gz` 的大小为 170,498,071 bytes，实测 MD5 为
+`c58f30108f718f92721af3b95e74349a`，与 torchvision 记录的官方归档 MD5 一致。旧的
+`data/cifar-10-batches-py/` 因 ACL 异常无法读取或覆盖；未删除旧数据，而是把已通过 MD5
+的原始归档复制到新根目录并重新解压：
 
-这个结果超过原计划的 80% baseline 门槛，但它只是一组 seed 的教学工程结果，没有报告
-均值/标准差，也没有根据 test 反复调参。训练时 torchvision 在 NumPy 2.4 下给出一个
-`VisibleDeprecationWarning`；流程与指标正常，警告不应被误写成“无任何警告”。
+```powershell
+New-Item -ItemType Directory -Path data/cifar10_verified_20260817 -Force
+Copy-Item data/cifar-10-python.tar.gz `
+  data/cifar10_verified_20260817/cifar-10-python.tar.gz
 
-![CIFAR-10 BasicCNN 训练曲线](assets/cifar10_basiccnn_seed42_curves.png)
+conda run --no-capture-output -n ai-learn python -c `
+  "from torchvision.datasets import CIFAR10; from project2_cifar10.data import build_transforms; train=CIFAR10(root='data/cifar10_verified_20260817', train=True, download=True, transform=build_transforms('basic')[1]); x,y=train[0]; print(len(train), tuple(x.shape), x.dtype, y)"
+```
 
-可追溯副本：[`history.csv`](assets/cifar10_basiccnn_seed42_history.csv) ·
-[`config.json`](assets/cifar10_basiccnn_seed42_config.json)。大体积 checkpoint 仍只保留在被
-`.gitignore` 排除的 `runs/` 中。
+实际读取结果为 50,000 个 official train 样本、样本 shape `(3, 32, 32)`、dtype
+`torch.float32`、10 类。seed 42 的划分再次验证为 45,000 train + 5,000 validation，
+索引互斥且并集覆盖全部 50,000 个样本；此阶段只构造 `train=True` 数据集，未构造 test
+loader。两次正式训练的首行也都明确输出 `test=not_loaded`。
+
+### 7.2 实际执行命令
+
+baseline 使用本 README 第 2、5 节的全部默认训练超参数，只把数据根目录指向上述已验证
+副本，并使用新的输出目录避免覆盖旧实验：
+
+```powershell
+conda run --no-capture-output -n ai-learn python -m project2_cifar10.train `
+  --dataset cifar10 `
+  --data-dir data/cifar10_verified_20260817 `
+  --epochs 30 `
+  --batch-size 128 `
+  --learning-rate 0.001 `
+  --weight-decay 0.0005 `
+  --validation-size 5000 `
+  --num-workers 0 `
+  --augmentation basic `
+  --device auto `
+  --seed 42 `
+  --deterministic `
+  --output-dir runs/cifar10_baseline_seed42_20260817 |
+  Tee-Object runs/cifar10_baseline_seed42_20260817/train.log
+```
+
+baseline 训练完成并由 validation 锁定 best 后，才执行一次 official test 最终评估：
+
+```powershell
+conda run --no-capture-output -n ai-learn python -m project2_cifar10.evaluate `
+  runs/cifar10_baseline_seed42_20260817/cnn/best.pt `
+  --data-dir data/cifar10_verified_20260817 `
+  --batch-size 256 `
+  --num-workers 0 `
+  --device auto |
+  Tee-Object runs/cifar10_baseline_seed42_20260817/evaluate_best.log
+```
+
+小型对照预先固定为只关闭训练数据增强。除输出目录这个记账字段外，两个 `config.json`
+逐字段对比确认唯一训练配置差异是 `augmentation: basic -> none`；模型、数据与划分、30 轮
+预算、optimizer、scheduler、batch size、seed 和 deterministic 均不变：
+
+```powershell
+conda run --no-capture-output -n ai-learn python -m project2_cifar10.train `
+  --dataset cifar10 `
+  --data-dir data/cifar10_verified_20260817 `
+  --epochs 30 `
+  --batch-size 128 `
+  --learning-rate 0.001 `
+  --weight-decay 0.0005 `
+  --validation-size 5000 `
+  --num-workers 0 `
+  --augmentation none `
+  --device auto `
+  --seed 42 `
+  --deterministic `
+  --output-dir runs/cifar10_ablation_no_augmentation_seed42_20260817 |
+  Tee-Object runs/cifar10_ablation_no_augmentation_seed42_20260817/train.log
+
+conda run --no-capture-output -n ai-learn python -m project2_cifar10.evaluate `
+  runs/cifar10_ablation_no_augmentation_seed42_20260817/cnn/best.pt `
+  --data-dir data/cifar10_verified_20260817 `
+  --batch-size 256 `
+  --num-workers 0 `
+  --device auto |
+  Tee-Object runs/cifar10_ablation_no_augmentation_seed42_20260817/evaluate_best.log
+```
+
+对照也只在 30 轮训练结束、validation 选出 best 后评估一次 official test；没有根据 test
+追加实验、选择 epoch 或调整配置。
+
+### 7.3 指标、checkpoint 与曲线
+
+| 实验 | 训练增强 | validation 选中 epoch | 选中轮 train acc | best val loss | best val acc | train-val gap | 最终 test loss | 最终 test acc |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| 默认 baseline | `basic` | 29 | 90.95% | 0.3610 | **88.42%** | 2.53 pp | **0.3982** | **87.04%** |
+| 一变量对照 | `none` | 30 | 99.68% | 0.5710 | 85.92% | 13.76 pp | 0.6472 | 84.36% |
+| 对照 - baseline | — | — | +8.73 pp | +0.2101 | -2.50 pp | +11.23 pp | +0.2490 | -2.68 pp |
+
+baseline 的 30 轮训练时间合计 470.0 s，对照为 389.3 s；时间只用于记录，不作为模型质量
+结论。baseline 的 epoch 30 validation 为 88.20%，低于 epoch 29，因此最终评估确实加载
+epoch 29 `best.pt`，而非 epoch 30 `last.pt`。对照的 best 与 last 都对应 epoch 30。
+四个 checkpoint 均能以 `weights_only=True` 读取，且包含
+`selection_metric=validation_accuracy`：
+
+```text
+runs/cifar10_baseline_seed42_20260817/cnn/best.pt  # epoch 29, 3,517,941 bytes
+runs/cifar10_baseline_seed42_20260817/cnn/last.pt  # epoch 30, 3,517,941 bytes
+runs/cifar10_ablation_no_augmentation_seed42_20260817/cnn/best.pt  # epoch 30, 3,518,005 bytes
+runs/cifar10_ablation_no_augmentation_seed42_20260817/cnn/last.pt  # epoch 30, 3,518,005 bytes
+```
+
+baseline 曲线：
+
+![CIFAR-10 BasicCNN basic augmentation curves](assets/cifar10_basiccnn_basic_seed42_20260817_curves.png)
+
+无增强对照曲线：
+
+![CIFAR-10 BasicCNN no augmentation curves](assets/cifar10_basiccnn_none_seed42_20260817_curves.png)
+
+可追溯小型副本：
+
+- baseline：[`history.csv`](assets/cifar10_basiccnn_basic_seed42_20260817_history.csv) ·
+  [`config.json`](assets/cifar10_basiccnn_basic_seed42_20260817_config.json) ·
+  [`train output`](assets/cifar10_basiccnn_basic_seed42_20260817_train_output.txt) ·
+  [`evaluate output`](assets/cifar10_basiccnn_basic_seed42_20260817_evaluate_output.txt)
+- 无增强：[`history.csv`](assets/cifar10_basiccnn_none_seed42_20260817_history.csv) ·
+  [`config.json`](assets/cifar10_basiccnn_none_seed42_20260817_config.json) ·
+  [`train output`](assets/cifar10_basiccnn_none_seed42_20260817_train_output.txt) ·
+  [`evaluate output`](assets/cifar10_basiccnn_none_seed42_20260817_evaluate_output.txt)
+
+大体积 checkpoint 仍只保留在被 `.gitignore` 排除的 `runs/` 中。
+
+### 7.4 对比解释与边界
+
+关闭随机裁剪和水平翻转后，模型更容易记住固定训练图像：选中轮 train accuracy 从
+90.95% 上升到 99.68%，但 best validation accuracy 下降 2.50 pp，train-validation gap
+扩大 11.23 pp；曲线上也能看到 train loss 接近 0，而 validation loss 长期停在约
+0.55--0.65。这个一变量结果支持“默认 basic augmentation 在本设置下抑制过拟合并改善
+泛化”的解释，最终 test 的 -2.68 pp 与 validation 方向一致。
+
+这仍然只是一组 seed、一个 BasicCNN 和一个数据划分的教学实验，没有均值/标准差，不能
+写成对所有 CIFAR-10 模型都成立的普遍因果结论。baseline 的指标与 2026-08-16 同配置
+run 精确一致，说明同一软硬件栈下的 deterministic 复现成功。torchvision 在 NumPy 2.4
+下仍给出 `VisibleDeprecationWarning`；训练与指标正常，但不应表述为“无任何警告”。
+
+### 7.5 现有测试
+
+实际命令：
+
+```powershell
+conda run --no-capture-output -n ai-learn python -m unittest discover `
+  -s project2_cifar10/tests -v
+```
+
+结果：实验开始前 **6/6 passed（21.793s）**；README 与产物更新后最终复跑仍为
+**6/6 passed（17.114s）**，`compileall` 同时通过。测试覆盖模型 shape、可复现且互斥完备
+的划分、三档增强内容、mock CIFAR-10 loader、synthetic 前反向与参数更新，以及
+训练/恢复/validation 选模/独立 test 的完整 CLI。
 
 ## 8. 项目结构
 

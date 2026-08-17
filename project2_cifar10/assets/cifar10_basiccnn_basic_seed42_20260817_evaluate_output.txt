@@ -1,0 +1,1 @@
+model=cnn selected_epoch=29 selected_by=validation_accuracy test_loss=0.3982 test_accuracy=87.04% test_samples=10000
