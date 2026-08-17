@@ -78,7 +78,8 @@ W3 的核心问题变成：“能否构造一个实验协议正确、过程可�
 - 无需联网的 6 个 smoke/integration tests；
 - synthetic 端到端训练、独立评估和曲线验证。
 - model/optimizer/scheduler/RNG/DataLoader generator 的 epoch 边界恢复；
-- 30 轮真实 CIFAR-10 GPU baseline 与一次独立官方 test 评估。
+- 30 轮真实 CIFAR-10 GPU baseline、确定性复现与一次独立官方 test 评估；
+- 只关闭训练数据增强的 30 轮一变量对照，且仍由 validation 选 best 后才评估 test。
 
 ### 2.3 当前没有完成什么
 
@@ -86,8 +87,8 @@ W3 的核心问题变成：“能否构造一个实验协议正确、过程可�
 - 基础 CNN 只有一个 seed，不提供方差估计；
 - ResNet 与 residual 消融位于后续 `project3_resnet`。
 
-因此可以说“W3 工程管道与单 seed baseline 已完成”，不能说“获得稳定的多 seed 结论”或
-“达到 CIFAR-10 SOTA”。
+因此可以说“W3 工程管道、单 seed baseline 和一个受控增强对照已完成”，不能说“获得稳定
+的多 seed 结论”或“达到 CIFAR-10 SOTA”。
 
 ### 2.4 每个文件先做什么
 
@@ -1786,7 +1787,7 @@ python -m project2_cifar10.plot_history `
   --output runs/cifar10/cnn/curves_manual.png
 ```
 
-### 19.4 当前真实验证边界
+### 19.4 2026-08-10 初始验证边界（历史记录）
 
 2026-08-10 已验证：
 
@@ -1798,9 +1799,9 @@ python -m project2_cifar10.plot_history `
 - synthetic train/evaluate/plot 完整通过；
 - best/last/CSV/config/curve 语义通过集成测试。
 
-曾尝试首次下载官方 CIFAR-10 做受限真实数据 smoke，但官方源在 5 分钟内未下载完成，因此
-没有产生真实 CIFAR-10 指标；残缺下载和失败 run 已清理。后续正式结果必须由上一节全量
-命令实际运行后填写。
+当时曾尝试首次下载官方 CIFAR-10 做受限真实数据 smoke，但官方源在 5 分钟内未下载完成，
+因此没有产生真实 CIFAR-10 指标；残缺下载和失败 run 已清理。这只是 2026-08-10 的阶段性
+记录，之后完成的正式 baseline 与对照实验见第 24、25 节和项目 README。
 
 ## 20. 建议的第一个独立改动
 
@@ -1999,7 +2000,7 @@ epoch,train_loss,train_accuracy,val_loss,val_accuracy,learning_rate,epoch_second
 - [ ] 独立加载 best checkpoint 并完成 test 入口。
 - [ ] 自己完成一次 `--dropout` 跨文件修改并补测试。
 - [x] 正式 CIFAR-10 全量训练完成，README 已记录真实命令、环境、曲线和 test 结果。
-- [ ] 正式结果至少补一项单变量对照，且不根据 test 反复调参。
+- [x] 正式结果已补一项只关闭数据增强的单变量对照，且未根据 test 反复调参。
 
 完成这些之后，这个项目才从“AI 给出的可运行参考工程”变成你能够解释、修改、验证并在
 面试或导师交流中诚实讲清楚的个人学习成果。
@@ -2134,3 +2135,44 @@ README 如实记录该警告；“命令 exit code 0”不等于“控制台绝�
 6. epoch 中间崩溃时当前工程能从哪个粒度恢复？
 7. deterministic 为什么仍不能保证跨 CPU/GPU 逐 bit 相等？
 8. 真实 best/last 分别是哪一轮，为什么最终 test 选 epoch 29？
+
+## 25. 2026-08-17 确定性复现与无增强对照
+
+### 25.1 为什么需要重跑 baseline
+
+旧的 `data/cifar-10-batches-py/` 出现 ACL 异常，不能把“压缩包存在”或“昨天训练成功”当成
+今天的数据验证。实际检查确认官方归档大小为 170,498,071 bytes，MD5 为
+`c58f30108f718f92721af3b95e74349a`；保留旧目录，把通过校验的归档复制到新数据根目录后
+重新解压。只加载 official train split，确认 50,000 个样本、10 类、单样本 shape
+`(3, 32, 32)`，seed 42 划分仍为互斥且完备的 45,000 train + 5,000 validation。
+
+随后在同一 Windows / RTX 5060 Laptop / PyTorch 2.11.0+cu130 环境里重新运行 README 默认
+baseline。30 轮 train/validation 指标与前一天逐项一致：validation 首次最优仍是 epoch 29
+的 88.42%，epoch 30 为 88.20%；只在训练和选模结束后评估 epoch 29 `best.pt`，official
+test 仍为 loss 0.3982、accuracy 87.04%。这支持同一软硬件栈下的确定性复现，不代表跨平台
+逐 bit 保证。
+
+### 25.2 对照只改变什么
+
+对照预先固定为 `augmentation: basic -> none`。逐字段比较两个 `config.json` 后，除实验
+输出目录这个记账字段外，唯一训练配置差异就是 augmentation；模型、数据根目录、划分、
+epochs、batch、optimizer、learning rate、weight decay、scheduler、seed 和 deterministic
+全部相同。对照同样跑满 30 轮，再由 validation 选出 best；test 没有参与 epoch 或配置选择。
+
+| 实验 | 选中 epoch | 选中轮 train acc | best val loss | best val acc | train-val gap | final test acc |
+|---|---:|---:|---:|---:|---:|---:|
+| `basic` baseline | 29 | 90.95% | 0.3610 | 88.42% | 2.53 pp | 87.04% |
+| `none` 对照 | 30 | 99.68% | 0.5710 | 85.92% | 13.76 pp | 84.36% |
+| 对照 - baseline | — | +8.73 pp | +0.2101 | -2.50 pp | +11.23 pp | -2.68 pp |
+
+### 25.3 可以怎样解释，不能怎样解释
+
+无增强模型更快把固定训练图像拟合到接近 100% accuracy，但 validation accuracy 更低、loss
+更高，generalization gap 也显著扩大。结合两条真实曲线，这组受控结果支持“默认随机裁剪和
+水平翻转在当前 BasicCNN、seed 和划分下缓解过拟合”的解释；final test 与 validation 的方向
+一致。
+
+它仍然只是单 seed、单模型、单划分的教学实验，不能据此声称数据增强对所有 CIFAR-10 模型
+必然带来固定幅度的提升，也不能把 test 的 -2.68 pp 当成继续搜索配置的信号。真实命令、
+完整 CSV/config、曲线、训练输出和最终评估输出统一保存在项目 README 与 `assets/`；大体积
+checkpoint 只保留在被 `.gitignore` 排除的本地 `runs/`。

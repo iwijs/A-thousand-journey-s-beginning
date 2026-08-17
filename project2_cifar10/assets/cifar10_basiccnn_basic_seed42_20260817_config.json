@@ -1,0 +1,23 @@
+{
+  "augmentation": "basic",
+  "batch_size": 128,
+  "data_dir": "data\\cifar10_verified_20260817",
+  "dataset": "cifar10",
+  "deterministic": true,
+  "device": "auto",
+  "epochs": 30,
+  "learning_rate": 0.001,
+  "limit_train": null,
+  "limit_val": null,
+  "model": "cnn",
+  "num_workers": 0,
+  "output_dir": "runs\\cifar10_baseline_seed42_20260817",
+  "overwrite": false,
+  "resolved_device": "cuda",
+  "resume": null,
+  "scheduler": "cosine",
+  "seed": 42,
+  "selection_metric": "validation_accuracy",
+  "validation_size": 5000,
+  "weight_decay": 0.0005
+}
